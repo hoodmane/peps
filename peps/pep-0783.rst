@@ -196,7 +196,8 @@ There are no security implications in this PEP.
 Rejected Ideas
 ==============
 
-Alternative options for the abi tag:
+Alternative Options for the Platform Tag
+----------------------------------------
 
 * ``pyodide_${YEAR}_${PATCH}`` -- This avoids potential confusion between e.g.,
   ``314_0`` and Python ``3.14.0``. On the other hand, it makes the link between
