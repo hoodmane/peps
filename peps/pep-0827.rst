@@ -348,12 +348,12 @@ and the behavior of ``Unpack`` for ``*args``
 from :pep:`646` "Variadic Generics".
 
 When inferring types here, the type checker should **infer literal
-types when possible**.  This means inferring literal types for
+types when possible** (example?).  This means inferring literal types for
 arguments that **do not** appear in the bound, as well as
 for arguments that **do** appear in the bound as read-only.
 
-For each non-required item in the bound that does **not** have a
-matching argument provided, then if the item is read-only, it will
+Each optional read-only item in the bound that does **not** have a
+matching argument provided will
 have its type inferred as ``Never``, to indicate that it was not
 provided.  (This can only be done for read-only items, since non
 read-only items are invariant.)
@@ -376,10 +376,10 @@ this PEP.
 
 We introduce a ``Param`` type that contains all the information about a function param::
 
-    class Param[N: str | None, T, Q: ParamQuals = typing.Never]:
+    class Param[N: str | None, T, Q: ParamQuals = typing.Never]: # Why Never default??
         pass
 
-    ParamQuals = typing.Literal["*", "**", "default", "keyword"]
+    ParamQuals = typing.Literal["*", "**", "default", "keyword", "positional"]
 
     type PosParam[N: str | None, T] = Param[N, T, Literal["positional"]]
     type PosDefaultParam[N: str | None, T] = Param[N, T, Literal["positional", "default"]]
@@ -428,6 +428,8 @@ as::
         int,
     ]
 
+1. Explain here why name is needed for "a" positional only
+2. Explain here why name is not needed for args & kwargs 
 
 or, using the type abbreviations we provide::
 
@@ -613,6 +615,9 @@ Boolean operators
   Technically this relation is "consistency" in the typing spec, not
   equivalence.
 
+How different can equivalent types be? Because I've been pretty surprised in
+typescript by things that are mutually assignable.
+
 * ``Bool[T]``: Returns ``Literal[True]`` if ``T`` is also
   ``Literal[True]`` or a union containing it.
   Equivalent to ``IsAssignable[T, Literal[True]] and not IsAssignable[T, Never]``.
@@ -644,6 +649,9 @@ Basic operators
   as ``*args: Any`` and ``**kwargs: Any``, represented with the new
   ``Param`` types.
 
+What does packed in a tuple mean? If I do GetArg[Callable[[int, str], int],
+Callable, 0] I get tuple[int, str]? and to get str, I'd need to do GetArg[..., 1]?
+
 * ``GetArgs[T, Base]``: returns a tuple containing all of the type
   arguments of ``T`` when interpreted as ``Base``, or an error if it
   cannot be.
@@ -667,8 +675,14 @@ Basic operators
   ``T``, we want the value of ``type(x).<attr>``. So
   ``GetSpecialAttr[Literal[1], "__name__"]`` should produce ``Literal["int"]``.
 
+    Are any of these operators possible at runtime? For instance could I get
+    `__name__` via actually T.__name__? Is that a bad idea? I guess for runtime
+    type handling?
+
 All of the operators in this section are :ref:`lifted over union types
 <pep827-lifting>`.
+
+ 
 
 Union processing
 ''''''''''''''''
@@ -695,6 +709,7 @@ Object inspection
 
 * ``Attrs[T]``: like ``Members[T]`` but only returns attributes (not
   methods).
+  What about properties??
 
 * ``GetMember[T, S: Literal[str]]``: Produces a ``Member`` type for the
   member named ``S`` from the class ``T``, or an error if it does not exist.
@@ -715,12 +730,15 @@ Object inspection
   * ``T`` is the type. Accessible with ``.type``.
   * ``Q`` is a union of qualifiers (see ``MemberQuals``
     below). Accessible with ``.quals``. ``Never`` if no qualifiers.
+    Why a union vs a tuple?
   * ``Init`` is the literal type of the attribute initializer in the
     class (see :ref:`InitField <pep827-init-field>`). Accessible with
     ``.init``.  ``Never`` if no initializer.
   * ``D`` is the defining class of the member. (That is, which class
     the member is inherited from. Always ``Never``, for a ``TypedDict``).
     Accessible with ``.definer``.
+
+Is there an analogue of this in typescript?
 
 * ``MemberQuals = Literal['ClassVar', 'Final', 'NotRequired', 'ReadOnly']`` -
   ``MemberQuals`` is the type of "qualifiers" that can apply to a
@@ -750,6 +768,7 @@ Object creation
 
 Note that we are not currently proposing any way to create *nominal* classes
 or any way to make new *generic* types.
+Why not any way to make new *generic* types? I can't make SingleFieldDataClass[Literal["field_name"], FieldType]?
 
 
 .. _pep827-init-field:
@@ -787,6 +806,8 @@ then we would infer the type ``InitField[TypedDict('...', {'default':
 Literal[0], 'kw_only': Literal[True]})]`` for the initializer, and
 that would be made available as the ``Init`` field of the ``Member``.
 
+Is there an analogous thing in typescript?
+
 
 Callable inspection and creation
 ''''''''''''''''''''''''''''''''
@@ -812,12 +833,15 @@ the type argument of ``Member``, to disallow its use for
 locals, parameter types, return types, nested inside other types,
 etc.  Rationale discussed :ref:`below <pep827-generic-callable-rationale>`.
 
+Example?
+
 Overloaded function types
 '''''''''''''''''''''''''
 
 * ``Overloaded[*Callables]`` - An overloaded function type, with the
   underlying types in order.
 
+nice!
 
 Raise error
 '''''''''''
@@ -850,6 +874,8 @@ Update class
 
 Lifting over Unions
 -------------------
+
+Maybe this should be after we learn about the builtin operations??
 
 Many of the builtin operations are "lifted" over ``Union``.
 
@@ -1950,3 +1976,4 @@ Copyright
 
 This document is placed in the public domain or under the
 CC0-1.0-Universal license, whichever is more permissive.
+f
